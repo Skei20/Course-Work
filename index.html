@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1565C0">
+  <title>Course Work System</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;overflow:hidden;background:#f4f6f8;font-family:-apple-system,Roboto,sans-serif}
+    #loader{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;transition:opacity .3s}
+    #loader.fade{opacity:0;pointer-events:none}
+    #loader .icon{font-size:60px;margin-bottom:14px}
+    #loader .title{font-size:22px;font-weight:700;color:#1a1a1a}
+    #loader .sub{font-size:13px;color:#888;margin:4px 0 22px}
+    .spinner{width:30px;height:30px;border:3px solid #ddd;border-top-color:#1565C0;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #app-frame{width:100%;height:100%;border:none;position:fixed;inset:0}
+    #offline{position:fixed;top:0;left:0;right:0;background:#FF9800;color:#fff;text-align:center;padding:4px;font-size:12px;font-weight:600;z-index:20;display:none}
+    #offline.show{display:block}
+    #cfg{position:fixed;inset:0;background:#fff;z-index:30;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    #cfg.hidden{display:none}
+    #cfg h1{font-size:21px;margin-bottom:8px}
+    #cfg p{font-size:14px;color:#666;margin-bottom:18px;text-align:center;max-width:330px}
+    #cfg input{width:100%;max-width:360px;padding:14px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;margin-bottom:12px}
+    #cfg button{width:100%;max-width:360px;padding:14px;background:#1565C0;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700}
+    #cfg .err{color:#d32f2f;font-size:13px;margin-bottom:8px;display:none}
+  </style>
+</head>
+<body>
+  <div id="cfg" class="hidden">
+    <div style="font-size:48px;margin-bottom:12px">🎓</div>
+    <h1>Course Work Setup</h1>
+    <p>Paste your Google Apps Script web-app URL. You only do this once. Sign in with <b>shadreckkondala@gmail.com</b>.</p>
+    <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec">
+    <div id="cfgErr" class="err"></div>
+    <button onclick="saveConfig()">Connect</button>
+    <p style="margin-top:14px;font-size:12px;color:#aaa">From Apps Script: Deploy &gt; Manage deployments &gt; copy the Web app URL.</p>
+  </div>
+
+  <div id="loader">
+    <div class="icon">🎓</div>
+    <div class="title">Course Work System</div>
+    <div class="sub">Loading…</div>
+    <div class="spinner"></div>
+  </div>
+
+  <div id="offline">No connection. Entries are saved on the phone and sync when you reconnect.</div>
+
+  <!-- allow="camera" lets the in-app camera/photo capture work inside the frame -->
+  <iframe id="app-frame" allow="camera;microphone"
+          sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-modals allow-downloads"></iframe>
+
+<script>
+  var KEY='cw_apps_script_url';
+  function stored(){return localStorage.getItem(KEY);}
+  function saveConfig(){
+    var url=document.getElementById('cfgUrl').value.trim(), err=document.getElementById('cfgErr');
+    if(url.indexOf('script.google.com/macros')<0){
+      err.textContent='That is not a Google Apps Script URL (must contain script.google.com/macros/s/).';
+      err.style.display='block'; return;
+    }
+    localStorage.setItem(KEY,url);
+    document.getElementById('cfg').classList.add('hidden');
+    loadApp(url);
+  }
+  function loadApp(url){
+    var f=document.getElementById('app-frame'), l=document.getElementById('loader');
+    f.src=url;
+    f.onload=function(){ setTimeout(function(){ l.classList.add('fade'); setTimeout(function(){l.style.display='none';},300); },500); };
+    setTimeout(function(){ if(l.style.display!=='none'){ l.classList.add('fade'); setTimeout(function(){l.style.display='none';},300); } },15000);
+  }
+  window.addEventListener('load',function(){
+    var url=stored();
+    if(!url){ document.getElementById('loader').style.display='none'; document.getElementById('cfg').classList.remove('hidden'); }
+    else loadApp(url);
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+    function st(){ document.getElementById('offline').classList.toggle('show', !navigator.onLine); }
+    window.addEventListener('online',st); window.addEventListener('offline',st); st();
+  });
+</script>
+</body>
+</html>
